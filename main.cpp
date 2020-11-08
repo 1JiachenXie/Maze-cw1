@@ -11,27 +11,27 @@
 using namespace std;
 
 
-static const int BLANK = 0;
+static const int ROAD = 0;
 static const int WALL = 1;
-static const int START = 2;
-static const int END = 3;
+static const int BEGINING = 2;
+static const int EXIT = 3;
 static const int STEP = 4;
-static const int down_move = 101;
-static const int right_move = 102;
-static const int left_move = 103;
-static const int up_move = 104;
-static int weight_w = 10;
+static const int godown = 101;
+static const int goright = 102;
+static const int goleft = 103;
+static const int goup = 104;
+static int weight = 10;
 static int row = 0;
 static int col = 0;
 
-struct Squre
+struct Space3x3
 {
-	int x, y, direction;
-	Squre(int n, int m, int dir)
+	int x, y, distance;
+	Space3x3(int n, int m, int dir)
 	{
 		x = n;
 		y = m;
-		direction = dir;
+		distance = dir;
 	}
 };
 
@@ -46,51 +46,51 @@ struct point
 struct Node
 {
 	int x_pos, y_pos;
-	int real_value; //起始点到当前点实际代价
-	int h_value;//当前节点到目标节点最佳路径的估计代价
-	int f_value;//估计值
+	int valuetobeginning; //起始点到当前点实际代价
+	int HinAstar;//当前节点到目标节点最佳路径的估计代价
+	int FinAstar;//估计值
 	Node* parent;
 	Node(int x_pos, int y_pos)
 	{
 		this->x_pos = x_pos;
 		this->y_pos = y_pos;
-		this->real_value = 0;
-		this->h_value = 0;
-		this->f_value = 0;
+		this->valuetobeginning = 0;
+		this->HinAstar = 0;
+		this->FinAstar = 0;
 		this->parent = NULL;
 	}
 	Node(int x_pos, int y_pos, Node* parent)
 	{
 		this->x_pos = x_pos;
 		this->y_pos = y_pos;
-		this->real_value = 0;
-		this->h_value = 0;
-		this->f_value = 0;
+		this->valuetobeginning = 0;
+		this->HinAstar = 0;
+		this->FinAstar = 0;
 		this->parent = parent;
 	}
 };
 
-class AstarAlgorithm
+class Astarpathfinding
 {
 public:
-	AstarAlgorithm();
-	~AstarAlgorithm();
+	Astarpathfinding();
+	~Astarpathfinding();
 	void SearchShortestPath(Node* start_pos, Node* end_pos);
-	bool CheckPath(Node* start_pos, Node* end_pos);
-	void CheckStep(int x_pos, int y_pos, Node* parent, int real_value);
-	void GetNextStep(Node* cur_point);
+	bool FindPath(Node* start_pos, Node* end_pos);
+	void StepCheck(int x_pos, int y_pos, Node* parent, int real_value);
+	void Nextstepgo(Node* cur_point);
 	int CheckContains(vector<Node*>* node_list, int x_pos, int y_pos);
 	void CountGHF(Node* s_node, Node* e_node, int real_value);
 	static bool Compare(Node* n1, Node* n2);
-	bool CheckBeWall(int x_pos, int y_pos);
-	void GetPath(Node* current);
+	bool WallsetCheck(int x_pos, int y_pos);
+	void FindPath(Node* current);
 	vector<Node*> open_list;
 	vector<Node*> close_list;
 	Node *start_pos;
 	Node *end_pos;
 };
 
-vector<Squre> squre;
+vector<Space3x3> squre;
 int xpos = 1, y_pos = 1;
 int** maze = nullptr;
 int maze_w = 0;
@@ -98,18 +98,18 @@ int maze_h = 0;
 int end_pos = 0;
 vector<point> end_points;
 
-void ResetMaze()
+void RestartMaze()
 {
 	for (int i = 0; i < maze_h; i++)
 		for (int j = 0; j < maze_w; j++)
 			maze[i][j] = WALL;
 }
 
-void InitSqure()
+void SetSquare()
 {
 	end_points.clear();
-	ResetMaze();
-	maze[1][1] = BLANK;
+	RestartMaze();
+	maze[1][1] = ROAD;
 }
 
 void GetNextSqure()
@@ -117,22 +117,22 @@ void GetNextSqure()
 	//down
 	if (xpos + 1 < maze_h - 1 && maze[xpos + 1][y_pos] == WALL) 
 	{
-		squre.push_back(Squre(xpos + 1, y_pos, down_move));
+		squre.push_back(Space3x3(xpos + 1, y_pos, godown));
 	}
 	//right
 	if (y_pos + 1 < maze_w - 1 && maze[xpos][y_pos + 1] == WALL) 
 	{
-		squre.push_back(Squre(xpos, y_pos + 1, right_move));
+		squre.push_back(Space3x3(xpos, y_pos + 1, goright));
 	}
 	//up
 	if (xpos - 1 >= 1 && maze[xpos - 1][y_pos] == WALL)
 	{
-		squre.push_back(Squre(xpos - 1, y_pos, up_move));
+		squre.push_back(Space3x3(xpos - 1, y_pos, goup));
 	}
 	//left
 	if (y_pos - 1 >= 1 && maze[xpos][y_pos - 1] == WALL) 
 	{
-		squre.push_back(Squre(xpos, y_pos - 1, left_move));
+		squre.push_back(Space3x3(xpos, y_pos - 1, goleft));
 	}
 }
 
@@ -220,7 +220,7 @@ void FreeMaze()
 }
 
 
-void PrintMaze()
+void PrintoutMaze()
 {
 	for (int i = 0; i < maze_h; i++)
 	{
@@ -228,9 +228,9 @@ void PrintMaze()
 		{
 			if (maze[i][j] == WALL)
 				printf("X");
-			else if (maze[i][j] == START)
+			else if (maze[i][j] == BEGINING)
 				printf("S");
-			else if (maze[i][j] == END)
+			else if (maze[i][j] == EXIT)
 				printf("E");
 			else if (maze[i][j] == STEP)
 				printf("o");
@@ -253,7 +253,7 @@ bool SetStartAndEnd()
 	{
 		for (j = center_posy - 1; j < center_posy + 2; j++)
 		{
-			maze[i][j] = BLANK;
+			maze[i][j] = ROAD;
 		}
 	}
 	//外围必须都是围墙
@@ -270,11 +270,11 @@ bool SetStartAndEnd()
 
 	start.x = center_posx;
 	start.y = center_posy;
-	AstarAlgorithm astar;
+	Astarpathfinding astar;
 	Node *start_pos = new Node(start.x, start.y);
 	row = maze_h - 1;
 	col = maze_w - 1;
-	maze[center_posx][center_posy] = START;
+	maze[center_posx][center_posy] = BEGINING;
 	int num_end = 0;
 	i = 1;
 	j = maze_h - 1;
@@ -285,7 +285,7 @@ bool SetStartAndEnd()
 	{
 		for (; i < maze_w; i++)
 		{
-			if (maze[1][i] == BLANK && maze[0][i] == WALL)
+			if (maze[1][i] == ROAD && maze[0][i] == WALL)
 			{
 				Node *end_pos = new Node(0, i);
 				//if (astar.CheckPath(start_pos, end_pos))
@@ -294,7 +294,7 @@ bool SetStartAndEnd()
 					pt.x = 0;
 					pt.y = i;
 					end_points.push_back(pt);
-					maze[0][i] = END;
+					maze[0][i] = EXIT;
 					num_end++;
 					break;
 				}
@@ -302,7 +302,7 @@ bool SetStartAndEnd()
 		}
 		for (; j > 0 && num_end < end_pos; j--)
 		{
-			if (maze[j][1] == BLANK && maze[j][0] == WALL)
+			if (maze[j][1] == ROAD && maze[j][0] == WALL)
 			{
 				Node *end_pos = new Node(j, 0);
 				//if (astar.CheckPath(start_pos, end_pos))
@@ -311,7 +311,7 @@ bool SetStartAndEnd()
 					pt.x = j;
 					pt.y = 0;
 					end_points.push_back(pt);
-					maze[j][0] = END;
+					maze[j][0] = EXIT;
 					num_end++;
 					break;
 				}
@@ -319,7 +319,7 @@ bool SetStartAndEnd()
 		}
 		for (; k < maze_w && num_end < end_pos; k++)
 		{
-			if (maze[maze_h - 2][k] == BLANK && maze[maze_h - 1][k] == WALL)
+			if (maze[maze_h - 2][k] == ROAD && maze[maze_h - 1][k] == WALL)
 			{
 				Node *end_pos = new Node(maze_h - 1, k);
 				//if (astar.CheckPath(start_pos, end_pos))
@@ -328,7 +328,7 @@ bool SetStartAndEnd()
 					pt.x = maze_h - 1;
 					pt.y = k;
 					end_points.push_back(pt);
-					maze[maze_h - 1][k] = END;
+					maze[maze_h - 1][k] = EXIT;
 					num_end++;
 					break;
 				}
@@ -336,7 +336,7 @@ bool SetStartAndEnd()
 		}
 		for (; l > 0 && num_end < end_pos; l--)
 		{
-			if (maze[l][maze_w - 2] == BLANK && maze[l][maze_w - 1] == WALL)
+			if (maze[l][maze_w - 2] == ROAD && maze[l][maze_w - 1] == WALL)
 			{
 				Node *end_pos = new Node(l, maze_w - 1);
 				//if (astar.CheckPath(start_pos, end_pos))
@@ -345,7 +345,7 @@ bool SetStartAndEnd()
 					pt.x = l;
 					pt.y = maze_w - 1;
 					end_points.push_back(pt);
-					maze[l][maze_w - 1] = END;
+					maze[l][maze_w - 1] = EXIT;
 					num_end++;
 					break;
 				}
@@ -364,33 +364,33 @@ bool SetStartAndEnd()
 
 bool CreateMaze()
 {
-	InitSqure();
+	SetSquare();
 	GetNextSqure();
 
 	while (squre.size()) 
 	{
 		int squre_size = squre.size();
 		int randnum = rand() % squre_size;
-		Squre select_squre = squre[randnum];
+		Space3x3 select_squre = squre[randnum];
 		xpos = select_squre.x;
 
 		y_pos = select_squre.y;
 
-		switch (select_squre.direction) 
+		switch (select_squre.distance) 
 		{
-		case down_move:
+		case godown:
 			xpos++;
 			break;
 
-		case right_move:
+		case goright:
 			y_pos++;
 			break;
 
-		case left_move:
+		case goleft:
 			y_pos--;
 			break;
 
-		case up_move:
+		case goup:
 			xpos--;
 			break;
 		}
@@ -398,7 +398,7 @@ bool CreateMaze()
 		if (maze[xpos][y_pos] == WALL) 
 		{
 			//打通墙和目标块
-			maze[select_squre.x][select_squre.y] = maze[xpos][y_pos] = BLANK;
+			maze[select_squre.x][select_squre.y] = maze[xpos][y_pos] = ROAD;
 			//再次找出与矿工当前位置相邻的墙
 			GetNextSqure();
 		}
@@ -410,14 +410,14 @@ bool CreateMaze()
 }
 
 
-AstarAlgorithm::AstarAlgorithm()
+Astarpathfinding::Astarpathfinding()
 {
 }
-AstarAlgorithm::~AstarAlgorithm()
+Astarpathfinding::~Astarpathfinding()
 {
 }
 
-void AstarAlgorithm::SearchShortestPath(Node* start_pos, Node* end_pos)
+void Astarpathfinding::SearchShortestPath(Node* start_pos, Node* end_pos)
 {
 	if (start_pos->x_pos < 0 || start_pos->x_pos > row || start_pos->y_pos < 0 || start_pos->y_pos > col
 		|| end_pos->x_pos < 0 || end_pos->x_pos > row || end_pos->y_pos < 0 || end_pos->y_pos > col)
@@ -431,19 +431,19 @@ void AstarAlgorithm::SearchShortestPath(Node* start_pos, Node* end_pos)
 		current = open_list[0];
 		if (current->x_pos == end_pos->x_pos && current->y_pos == end_pos->y_pos)
 		{
-			GetPath(current);
+			FindPath(current);
 			open_list.clear();
 			close_list.clear();
 			break;
 		}
-		GetNextStep(current);
+		Nextstepgo(current);
 		close_list.push_back(current);
 		open_list.erase(open_list.begin());
 		sort(open_list.begin(), open_list.end(), Compare);
 	}
 }
 
-bool AstarAlgorithm::CheckPath(Node* start_pos, Node* end_pos)
+bool Astarpathfinding::FindPath(Node* start_pos, Node* end_pos)
 {
 	if (start_pos->x_pos < 0 || start_pos->x_pos > row || start_pos->y_pos < 0 || start_pos->y_pos > col
 		|| end_pos->x_pos < 0 || end_pos->x_pos > row || end_pos->y_pos < 0 || end_pos->y_pos > col)
@@ -461,7 +461,7 @@ bool AstarAlgorithm::CheckPath(Node* start_pos, Node* end_pos)
 			close_list.clear();
 			return true;
 		}
-		GetNextStep(current);
+		Nextstepgo(current);
 		close_list.push_back(current);
 		open_list.erase(open_list.begin());
 		sort(open_list.begin(), open_list.end(), Compare);
@@ -469,11 +469,11 @@ bool AstarAlgorithm::CheckPath(Node* start_pos, Node* end_pos)
 	return false;
 }
 
-void AstarAlgorithm::CheckStep(int x_pos, int y_pos, Node* parent, int real_value)
+void Astarpathfinding::StepCheck(int x_pos, int y_pos, Node* parent, int real_value)
 {
 	if (x_pos < 0 || x_pos > row || y_pos < 0 || y_pos > col)
 		return;
-	if (this->CheckBeWall(x_pos, y_pos))
+	if (this->WallsetCheck(x_pos, y_pos))
 		return;
 	if (CheckContains(&close_list, x_pos, y_pos) != -1)
 		return;
@@ -481,11 +481,11 @@ void AstarAlgorithm::CheckStep(int x_pos, int y_pos, Node* parent, int real_valu
 	if ((index = CheckContains(&open_list, x_pos, y_pos)) != -1)
 	{
 		Node *point = open_list[index];
-		if (point->real_value > parent->real_value + real_value)
+		if (point->valuetobeginning > parent->valuetobeginning + real_value)
 		{
 			point->parent = parent;
-			point->real_value = parent->real_value + real_value;
-			point->f_value = point->real_value + point->h_value;
+			point->valuetobeginning = parent->valuetobeginning + real_value;
+			point->FinAstar = point->valuetobeginning + point->HinAstar;
 		}
 	}
 	else
@@ -496,15 +496,15 @@ void AstarAlgorithm::CheckStep(int x_pos, int y_pos, Node* parent, int real_valu
 	}
 }
 
-void AstarAlgorithm::GetNextStep(Node* current)
+void Astarpathfinding::Nextstepgo(Node* current)
 {
-	CheckStep(current->x_pos - 1, current->y_pos, current, weight_w);//左
-	CheckStep(current->x_pos + 1, current->y_pos, current, weight_w);//右
-	CheckStep(current->x_pos, current->y_pos + 1, current, weight_w);//上
-	CheckStep(current->x_pos, current->y_pos - 1, current, weight_w);//下
+	StepCheck(current->x_pos - 1, current->y_pos, current, weight);//左
+	StepCheck(current->x_pos + 1, current->y_pos, current, weight);//右
+	StepCheck(current->x_pos, current->y_pos + 1, current, weight);//上
+	StepCheck(current->x_pos, current->y_pos - 1, current, weight);//下
 }
 
-int AstarAlgorithm::CheckContains(vector<Node*>* node_list, int x_pos, int y_pos)
+int Astarpathfinding::CheckContains(vector<Node*>* node_list, int x_pos, int y_pos)
 {
 	for (int i = 0; i < node_list->size(); i++)
 	{
@@ -516,48 +516,48 @@ int AstarAlgorithm::CheckContains(vector<Node*>* node_list, int x_pos, int y_pos
 	return -1;
 }
 
-void AstarAlgorithm::CountGHF(Node* s_node, Node* e_node, int real_value)
+void Astarpathfinding::CountGHF(Node* s_node, Node* e_node, int real_value)
 {
-	int h_value = abs(s_node->x_pos - e_node->x_pos) * weight_w + abs(s_node->y_pos - e_node->y_pos) * weight_w;
-	int currentg = s_node->parent->real_value + real_value;
+	int h_value = abs(s_node->x_pos - e_node->x_pos) * weight + abs(s_node->y_pos - e_node->y_pos) * weight;
+	int currentg = s_node->parent->valuetobeginning + real_value;
 	int f_value = currentg + h_value;
-	s_node->f_value = f_value;
-	s_node->h_value = h_value;
-	s_node->real_value = currentg;
+	s_node->FinAstar = f_value;
+	s_node->HinAstar = h_value;
+	s_node->valuetobeginning = currentg;
 }
 
 
-bool AstarAlgorithm::Compare(Node* n1, Node* n2)
+bool Astarpathfinding::Compare(Node* n1, Node* n2)
 {
-	return n1->f_value < n2->f_value;
+	return n1->FinAstar < n2->FinAstar;
 }
 
-bool AstarAlgorithm::CheckBeWall(int x_pos, int y_pos)
+bool Astarpathfinding::WallsetCheck(int x_pos, int y_pos)
 {
 	if (maze[x_pos][y_pos] == WALL)
 		return true;
 	return false;
 }
 
-void AstarAlgorithm::GetPath(Node* current)
+void Astarpathfinding::FindPath(Node* current)
 {
 	if (current->parent != NULL)
-		GetPath(current->parent);
-	if (maze[current->x_pos][current->y_pos] == BLANK)
+		FindPath(current->parent);
+	if (maze[current->x_pos][current->y_pos] == ROAD)
 		maze[current->x_pos][current->y_pos] = STEP;
 }
 
 
 void FindShortestPath()
 {
-	AstarAlgorithm astar;
+	Astarpathfinding astar;
 	Node *start_pos = new Node(start.x, start.y);
 	for (int i = 0; i < end_points.size(); i++)
 	{
 		Node *end_pos = new Node(end_points[i].x, end_points[i].y);
 		astar.SearchShortestPath(start_pos, end_pos);
 		cout << endl;
-		PrintMaze();
+		PrintoutMaze();
 	}
 }
 
@@ -573,13 +573,13 @@ void GenMaze()
 	{
 		maze[i] = new int[maze_w];
 	}
-	ResetMaze();
+	RestartMaze();
 	end_pos = InputInt("Number of exits:");
 	while (CreateMaze() == false)
 	{
-		ResetMaze();
+		RestartMaze();
 	}
-	PrintMaze();
+	PrintoutMaze();
 }
 
 // 保存迷宫
@@ -602,9 +602,9 @@ void SaveMaze()
 		{
 			if (maze[i][j] == WALL)
 				outfile << "X";
-			else if (maze[i][j] == START)
+			else if (maze[i][j] == BEGINING)
 				outfile << "S";
-			else if (maze[i][j] == END)
+			else if (maze[i][j] == EXIT)
 				outfile << "E";
 			else if (maze[i][j] == STEP)
 				outfile << "o";
@@ -655,23 +655,23 @@ void LoadMaze()
 				}
 				else if (ch == 'S')
 				{
-					maze[i][j] = START;
+					maze[i][j] = BEGINING;
 				}
 				else if (ch == 'E')
 				{
-					maze[i][j] = END;
+					maze[i][j] = EXIT;
 				}
 				else if (ch == ' ' || ch == 'o')
 				{
-					maze[i][j] = BLANK;
+					maze[i][j] = ROAD;
 				}
 
-				if (maze[i][j] == START)
+				if (maze[i][j] == BEGINING)
 				{
 					start.x = i;
 					start.y = j;
 				}
-				else if (maze[i][j] == END)
+				else if (maze[i][j] == EXIT)
 				{
 					point pt;
 					pt.x = i;
@@ -684,7 +684,7 @@ void LoadMaze()
 		}
 	}
 	infile.close();
-	PrintMaze();
+	PrintoutMaze();
 }
 
 void FindPath()

@@ -46,9 +46,9 @@ struct point
 struct Node
 {
 	int x_pos, y_pos;
-	int valuetobeginning; //起始点到当前点实际代价
-	int HinAstar;//当前节点到目标节点最佳路径的估计代价
-	int FinAstar;//估计值
+	int valuetobeginning; //The actual value from start to final
+	int HinAstar;//The estimate of the starting to final point
+	int FinAstar;//estimate
 	Node* parent;
 	Node(int x_pos, int y_pos)
 	{
@@ -136,14 +136,14 @@ void GetNextSqure()
 	}
 }
 
-//	清空输入缓存
+//	Clear the input cache
 void ClearQueue()
 {
 	while (getchar() != '\n')
 		continue;
 }
 
-//	确认输入的是整数
+//	ensure input is intage
 int InputInt(char const* msg)
 {
 	int result;
@@ -158,7 +158,7 @@ int InputInt(char const* msg)
 	return result;
 }
 
-//	确认输入的是奇数
+//	ensure input is odd
 int InputOddInt(char const* msg)
 {
 	int result;
@@ -173,7 +173,7 @@ int InputOddInt(char const* msg)
 	return result;
 }
 
-//	输入一个范围内的整数
+//	input an intage in a range
 int InputIntInRange(char const * msg, int l, int r)
 {
 	int j;
@@ -191,7 +191,7 @@ int InputIntInRange(char const * msg, int l, int r)
 	return j;
 }
 
-//	确认输入字符串
+//	ensure input is a string
 char* InputLine(char const * msg, char * str)
 {
 	int j = 0;
@@ -208,7 +208,7 @@ char* InputLine(char const * msg, char * str)
 	return str;
 }
 
-// 释放迷宫数组内存
+// Free maze array memory
 void FreeMaze()
 {
 	for (int i = 0; i < maze_h; i++)
@@ -242,13 +242,13 @@ void PrintoutMaze()
 	}
 }
 
-// 设置终点和优化迷宫
+// Set the exit and better the maze
 bool SetStartAndEnd()
 {
 	int center_posx = maze_h / 2;
 	int center_posy = maze_w / 2;
 	int i = 1, j = maze_h - 1, k = 1, l = maze_h - 1;
-	// 中间3*3的地方必须是空白的
+	// 3 x 3 in middle must be space
 	for (i = center_posx - 1; i < center_posx + 2; i++)
 	{
 		for (j = center_posy - 1; j < center_posy + 2; j++)
@@ -256,7 +256,7 @@ bool SetStartAndEnd()
 			maze[i][j] = ROAD;
 		}
 	}
-	//外围必须都是围墙
+	//The perimeter must be walled
 	for (i = 0; i < maze_w; i++)
 	{
 		maze[0][i] = WALL;
@@ -280,7 +280,7 @@ bool SetStartAndEnd()
 	j = maze_h - 1;
 	k = 1;
 	l = maze_h - 1;
-	//找终点 
+	//find exits 
 	while (num_end < end_pos)
 	{
 		for (; i < maze_w; i++)
@@ -394,16 +394,16 @@ bool CreateMaze()
 			xpos--;
 			break;
 		}
-		//目标块如果是墙
+		//If the target block is a wall
 		if (maze[xpos][y_pos] == WALL) 
 		{
-			//打通墙和目标块
+			//Break through the wall and the target block
 			maze[select_squre.x][select_squre.y] = maze[xpos][y_pos] = ROAD;
-			//再次找出与矿工当前位置相邻的墙
+			//Again, find the wall next to the miner's current position
 			GetNextSqure();
 		}
 
-		//删除这堵墙(把用不了的墙删了，对于那些已经施工过了不必再施工了，同时也是确保我们能跳出循环)
+		//Remove the wall (remove the walls that don't work, don't have to work on those that have already been built, and also make sure we get out of the loop)
 		squre.erase(squre.begin() + randnum);
 	}
 	return SetStartAndEnd();
@@ -561,7 +561,7 @@ void FindShortestPath()
 	}
 }
 
-// 生成迷宫
+// set maze
 void GenMaze()
 {
 	if (maze != nullptr)
@@ -582,7 +582,7 @@ void GenMaze()
 	PrintoutMaze();
 }
 
-// 保存迷宫
+// save maze
 void SaveMaze()
 {
 	char file_name[256];
@@ -617,7 +617,7 @@ void SaveMaze()
 
 }
 
-// 加载迷宫
+// load maze
 void LoadMaze()
 {
 	if (maze != nullptr)
@@ -694,7 +694,7 @@ void FindPath()
 	FindShortestPath();
 }
 
-// 程序主界面
+// main menu of this cw
 void MainMenu()
 {
 	int option = -1;
